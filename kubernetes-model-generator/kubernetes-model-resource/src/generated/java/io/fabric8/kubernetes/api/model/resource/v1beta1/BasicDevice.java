@@ -42,7 +42,11 @@ import lombok.experimental.Accessors;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
     "allNodes",
+    "allowMultipleAllocations",
     "attributes",
+    "bindingConditions",
+    "bindingFailureConditions",
+    "bindsToNode",
     "capacity",
     "consumesCounters",
     "nodeName",
@@ -76,9 +80,19 @@ public class BasicDevice implements Editable<BasicDeviceBuilder>, KubernetesReso
 
     @JsonProperty("allNodes")
     private Boolean allNodes;
+    @JsonProperty("allowMultipleAllocations")
+    private Boolean allowMultipleAllocations;
     @JsonProperty("attributes")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Map<String, DeviceAttribute> attributes = new LinkedHashMap<>();
+    @JsonProperty("bindingConditions")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private List<String> bindingConditions = new ArrayList<>();
+    @JsonProperty("bindingFailureConditions")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private List<String> bindingFailureConditions = new ArrayList<>();
+    @JsonProperty("bindsToNode")
+    private Boolean bindsToNode;
     @JsonProperty("capacity")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Map<String, DeviceCapacity> capacity = new LinkedHashMap<>();
@@ -101,10 +115,14 @@ public class BasicDevice implements Editable<BasicDeviceBuilder>, KubernetesReso
     public BasicDevice() {
     }
 
-    public BasicDevice(Boolean allNodes, Map<String, DeviceAttribute> attributes, Map<String, DeviceCapacity> capacity, List<DeviceCounterConsumption> consumesCounters, String nodeName, NodeSelector nodeSelector, List<DeviceTaint> taints) {
+    public BasicDevice(Boolean allNodes, Boolean allowMultipleAllocations, Map<String, DeviceAttribute> attributes, List<String> bindingConditions, List<String> bindingFailureConditions, Boolean bindsToNode, Map<String, DeviceCapacity> capacity, List<DeviceCounterConsumption> consumesCounters, String nodeName, NodeSelector nodeSelector, List<DeviceTaint> taints) {
         super();
         this.allNodes = allNodes;
+        this.allowMultipleAllocations = allowMultipleAllocations;
         this.attributes = attributes;
+        this.bindingConditions = bindingConditions;
+        this.bindingFailureConditions = bindingFailureConditions;
+        this.bindsToNode = bindsToNode;
         this.capacity = capacity;
         this.consumesCounters = consumesCounters;
         this.nodeName = nodeName;
@@ -129,6 +147,22 @@ public class BasicDevice implements Editable<BasicDeviceBuilder>, KubernetesReso
     }
 
     /**
+     * AllowMultipleAllocations marks whether the device is allowed to be allocated to multiple DeviceRequests.<br><p> <br><p> If AllowMultipleAllocations is set to true, the device can be allocated more than once, and all of its capacity is consumable, regardless of whether the requestPolicy is defined or not.
+     */
+    @JsonProperty("allowMultipleAllocations")
+    public Boolean getAllowMultipleAllocations() {
+        return allowMultipleAllocations;
+    }
+
+    /**
+     * AllowMultipleAllocations marks whether the device is allowed to be allocated to multiple DeviceRequests.<br><p> <br><p> If AllowMultipleAllocations is set to true, the device can be allocated more than once, and all of its capacity is consumable, regardless of whether the requestPolicy is defined or not.
+     */
+    @JsonProperty("allowMultipleAllocations")
+    public void setAllowMultipleAllocations(Boolean allowMultipleAllocations) {
+        this.allowMultipleAllocations = allowMultipleAllocations;
+    }
+
+    /**
      * Attributes defines the set of attributes for this device. The name of each attribute must be unique in that set.<br><p> <br><p> The maximum number of attributes and capacities combined is 32.
      */
     @JsonProperty("attributes")
@@ -143,6 +177,56 @@ public class BasicDevice implements Editable<BasicDeviceBuilder>, KubernetesReso
     @JsonProperty("attributes")
     public void setAttributes(Map<String, DeviceAttribute> attributes) {
         this.attributes = attributes;
+    }
+
+    /**
+     * BindingConditions defines the conditions for proceeding with binding. All of these conditions must be set in the per-device status conditions with a value of True to proceed with binding the pod to the node while scheduling the pod.<br><p> <br><p> The maximum number of binding conditions is 4.<br><p> <br><p> The conditions must be a valid condition type string.<br><p> <br><p> This is an alpha field and requires enabling the DRADeviceBindingConditions and DRAResourceClaimDeviceStatus feature gates.
+     */
+    @JsonProperty("bindingConditions")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    public List<String> getBindingConditions() {
+        return bindingConditions;
+    }
+
+    /**
+     * BindingConditions defines the conditions for proceeding with binding. All of these conditions must be set in the per-device status conditions with a value of True to proceed with binding the pod to the node while scheduling the pod.<br><p> <br><p> The maximum number of binding conditions is 4.<br><p> <br><p> The conditions must be a valid condition type string.<br><p> <br><p> This is an alpha field and requires enabling the DRADeviceBindingConditions and DRAResourceClaimDeviceStatus feature gates.
+     */
+    @JsonProperty("bindingConditions")
+    public void setBindingConditions(List<String> bindingConditions) {
+        this.bindingConditions = bindingConditions;
+    }
+
+    /**
+     * BindingFailureConditions defines the conditions for binding failure. They may be set in the per-device status conditions. If any is true, a binding failure occurred.<br><p> <br><p> The maximum number of binding failure conditions is 4.<br><p> <br><p> The conditions must be a valid condition type string.<br><p> <br><p> This is an alpha field and requires enabling the DRADeviceBindingConditions and DRAResourceClaimDeviceStatus feature gates.
+     */
+    @JsonProperty("bindingFailureConditions")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    public List<String> getBindingFailureConditions() {
+        return bindingFailureConditions;
+    }
+
+    /**
+     * BindingFailureConditions defines the conditions for binding failure. They may be set in the per-device status conditions. If any is true, a binding failure occurred.<br><p> <br><p> The maximum number of binding failure conditions is 4.<br><p> <br><p> The conditions must be a valid condition type string.<br><p> <br><p> This is an alpha field and requires enabling the DRADeviceBindingConditions and DRAResourceClaimDeviceStatus feature gates.
+     */
+    @JsonProperty("bindingFailureConditions")
+    public void setBindingFailureConditions(List<String> bindingFailureConditions) {
+        this.bindingFailureConditions = bindingFailureConditions;
+    }
+
+    /**
+     * BindsToNode indicates if the usage of an allocation involving this device has to be limited to exactly the node that was chosen when allocating the claim. If set to true, the scheduler will set the ResourceClaim.Status.Allocation.NodeSelector to match the node where the allocation was made.<br><p> <br><p> This is an alpha field and requires enabling the DRADeviceBindingConditions and DRAResourceClaimDeviceStatus feature gates.
+     */
+    @JsonProperty("bindsToNode")
+    public Boolean getBindsToNode() {
+        return bindsToNode;
+    }
+
+    /**
+     * BindsToNode indicates if the usage of an allocation involving this device has to be limited to exactly the node that was chosen when allocating the claim. If set to true, the scheduler will set the ResourceClaim.Status.Allocation.NodeSelector to match the node where the allocation was made.<br><p> <br><p> This is an alpha field and requires enabling the DRADeviceBindingConditions and DRAResourceClaimDeviceStatus feature gates.
+     */
+    @JsonProperty("bindsToNode")
+    public void setBindsToNode(Boolean bindsToNode) {
+        this.bindsToNode = bindsToNode;
     }
 
     /**
@@ -163,7 +247,7 @@ public class BasicDevice implements Editable<BasicDeviceBuilder>, KubernetesReso
     }
 
     /**
-     * ConsumesCounters defines a list of references to sharedCounters and the set of counters that the device will consume from those counter sets.<br><p> <br><p> There can only be a single entry per counterSet.<br><p> <br><p> The total number of device counter consumption entries must be &lt;= 32. In addition, the total number in the entire ResourceSlice must be &lt;= 1024 (for example, 64 devices with 16 counters each).
+     * ConsumesCounters defines a list of references to sharedCounters and the set of counters that the device will consume from those counter sets.<br><p> <br><p> There can only be a single entry per counterSet.<br><p> <br><p> The maximum number of device counter consumptions per device is 2.
      */
     @JsonProperty("consumesCounters")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -172,7 +256,7 @@ public class BasicDevice implements Editable<BasicDeviceBuilder>, KubernetesReso
     }
 
     /**
-     * ConsumesCounters defines a list of references to sharedCounters and the set of counters that the device will consume from those counter sets.<br><p> <br><p> There can only be a single entry per counterSet.<br><p> <br><p> The total number of device counter consumption entries must be &lt;= 32. In addition, the total number in the entire ResourceSlice must be &lt;= 1024 (for example, 64 devices with 16 counters each).
+     * ConsumesCounters defines a list of references to sharedCounters and the set of counters that the device will consume from those counter sets.<br><p> <br><p> There can only be a single entry per counterSet.<br><p> <br><p> The maximum number of device counter consumptions per device is 2.
      */
     @JsonProperty("consumesCounters")
     public void setConsumesCounters(List<DeviceCounterConsumption> consumesCounters) {
@@ -212,7 +296,7 @@ public class BasicDevice implements Editable<BasicDeviceBuilder>, KubernetesReso
     }
 
     /**
-     * If specified, these are the driver-defined taints.<br><p> <br><p> The maximum number of taints is 4.<br><p> <br><p> This is an alpha field and requires enabling the DRADeviceTaints feature gate.
+     * If specified, these are the driver-defined taints.<br><p> <br><p> The maximum number of taints is 16. If taints are set for any device in a ResourceSlice, then the maximum number of allowed devices per ResourceSlice is 64 instead of 128.<br><p> <br><p> This is an alpha field and requires enabling the DRADeviceTaints feature gate.
      */
     @JsonProperty("taints")
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
@@ -221,7 +305,7 @@ public class BasicDevice implements Editable<BasicDeviceBuilder>, KubernetesReso
     }
 
     /**
-     * If specified, these are the driver-defined taints.<br><p> <br><p> The maximum number of taints is 4.<br><p> <br><p> This is an alpha field and requires enabling the DRADeviceTaints feature gate.
+     * If specified, these are the driver-defined taints.<br><p> <br><p> The maximum number of taints is 16. If taints are set for any device in a ResourceSlice, then the maximum number of allowed devices per ResourceSlice is 64 instead of 128.<br><p> <br><p> This is an alpha field and requires enabling the DRADeviceTaints feature gate.
      */
     @JsonProperty("taints")
     public void setTaints(List<DeviceTaint> taints) {

@@ -873,6 +873,11 @@ spec:
         # [...]
 ```
 
+### Schema Customization
+
+In some instances the built-in set of annotations and logic may not produce the desired CRD output. There is a mechanism
+included in the crd-generator-api-v2 module for this. See the `io.fabric8.crdv2.generator.v1.SchemaCustomizer` annotation
+for directly manipulating the JSONSchemaProps of the annotated resource. This annotation is applied last, after all of the other annotations are processed.
 
 ## Features cheatsheet
 
@@ -902,6 +907,7 @@ spec:
 | `io.fabric8.kubernetes.model.annotation.SpecReplicas`           | The field is used in scale subresource as `specReplicaPath`                                         |
 | `io.fabric8.kubernetes.model.annotation.StatusReplicas`         | The field is used in scale subresource as `statusReplicaPath`                                       |
 | `io.fabric8.kubernetes.model.annotation.LabelSelector`          | The field is used in scale subresource as `labelSelectorPath`                                       |
+| `io.fabric8.crdv2.generator.v1.SchemaCustomizer`                | Advanced: Allows direct manipulation of the `JSONSchemaProps` via a custom `Customizer` class       |
 
 
 A field of type `com.fasterxml.jackson.databind.JsonNode` is encoded as an empty object with `x-kubernetes-preserve-unknown-fields: true` defined.

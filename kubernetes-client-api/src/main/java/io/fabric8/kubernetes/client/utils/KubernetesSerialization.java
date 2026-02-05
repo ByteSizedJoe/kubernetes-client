@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.KeyDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.cfg.HandlerInstantiator;
@@ -349,6 +350,22 @@ public class KubernetesSerialization {
   }
 
   /**
+   * Unmarshals a {@link String}
+   *
+   * @param str The {@link String}.
+   * @param type The target type reference, supporting generic types.
+   * @param <T> template argument denoting type
+   * @return returns de-serialized object
+   */
+  public <T> T unmarshal(String str, TypeReference<T> type) {
+    try (InputStream is = new ByteArrayInputStream(str.getBytes(StandardCharsets.UTF_8))) {
+      return unmarshal(is, type);
+    } catch (IOException e) {
+      throw KubernetesClientException.launderThrowable(e);
+    }
+  }
+
+  /**
    * Unmarshals an {@link InputStream}.
    *
    * @param is The {@link InputStream}.
@@ -426,6 +443,15 @@ public class KubernetesSerialization {
       return input; // valid json
     } catch (JsonProcessingException e) {
       return asJson(unmarshal(input, JsonNode.class));
+    }
+  }
+
+  public void mergePatch(Object updatable, String patch) {
+    ObjectReader reader = mapper.readerForUpdating(updatable);
+    try {
+      reader.readValue(patch);
+    } catch (JsonProcessingException e) {
+      throw KubernetesClientException.launderThrowable(e);
     }
   }
 

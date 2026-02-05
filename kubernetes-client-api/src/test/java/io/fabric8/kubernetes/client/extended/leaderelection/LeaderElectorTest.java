@@ -46,6 +46,7 @@ import static io.fabric8.kubernetes.client.extended.leaderelection.LeaderElector
 import static io.fabric8.kubernetes.client.extended.leaderelection.LeaderElector.now;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -141,6 +142,7 @@ class LeaderElectorTest {
     // Then
     Awaitility.await().atMost(10, TimeUnit.SECONDS).until(() -> Utils.isNullOrEmpty(activeLer.get().getHolderIdentity()));
     assertEquals(0, activeLer.get().getLeaderTransitions());
+    assertNull(activeLer.get().getHolderIdentity());
 
     // create a new elector, they are no good after a single use
     leaderElector = new LeaderElector(mock(NamespacedKubernetesClient.class), lec, CommonThreadPool.get());
@@ -277,14 +279,29 @@ class LeaderElectorTest {
   void canBecomeLeaderAndDifferentLeaderWithActiveLockShouldReturnFalse() {
     // Given
     final LeaderElectionConfig lec = mock(LeaderElectionConfig.class);
-    when(lec.getLeaseDuration()).thenReturn(Duration.ofHours(1L));
     final LeaderElectionRecord ler = mock(LeaderElectionRecord.class);
+    when(ler.getLeaseDuration()).thenReturn(Duration.ofHours(1L));
     when(ler.getHolderIdentity()).thenReturn("someone");
     when(ler.getRenewTime()).thenReturn(ZonedDateTime.now(ZoneOffset.UTC));
     // When
     final boolean result = new LeaderElector(mock(NamespacedKubernetesClient.class), lec, Runnable::run).canBecomeLeader(ler);
     // Then
     assertFalse(result);
+  }
+
+  @Test
+  void canBecomeLeaderRecordDurationDiffersFromConfig() {
+    // Given
+    final LeaderElectionConfig lec = mock(LeaderElectionConfig.class);
+    when(lec.getLeaseDuration()).thenReturn(Duration.ofHours(1L));
+    final LeaderElectionRecord ler = mock(LeaderElectionRecord.class);
+    when(ler.getLeaseDuration()).thenReturn(Duration.ofMinutes(15L));
+    when(ler.getHolderIdentity()).thenReturn("someone");
+    when(ler.getRenewTime()).thenReturn(ZonedDateTime.now(ZoneOffset.UTC).minus(Duration.ofMinutes(20L)));
+    // When
+    final boolean result = new LeaderElector(mock(NamespacedKubernetesClient.class), lec, Runnable::run).canBecomeLeader(ler);
+    // Then - because the duration from the record is used
+    assertTrue(result);
   }
 
   @Test
